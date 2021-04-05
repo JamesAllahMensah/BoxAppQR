@@ -72,7 +72,7 @@ function App(){
         <Switch>
           <Route path="/" exact component={() => <Landing />} />
           <Route path="/home" exact component={() => <Home />} />
-          <Route path="/qrlogin" exact component={() => <QRLanding />} />
+          <Route path="/qrlanding" exact component={() => <QRLanding />} />
         </Switch>
       </Router>
     </div>

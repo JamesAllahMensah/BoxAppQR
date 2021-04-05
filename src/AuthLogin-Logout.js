@@ -4,6 +4,14 @@ import Amplify from 'aws-amplify';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import awsconfig from './aws-exports'
+import {
+    Nav,
+    NavLink,
+    Bars,
+    NavMenu,
+    NavBtn,
+    NavBtnLink
+  } from './styles/NavBarElements';
 
 //required to use amplify
 Amplify.configure(awsconfig);
@@ -155,6 +163,13 @@ function parseUserData(userData){
     return userData
 }
 
+/**
+ * To avoid scenarios in which users attempt to hardcode values into a url, this checks whether
+ * the authentication session data is legitimate. In order for the session data to be legitimate,
+ * it must hold the access token, id token, user data, and service provider information 
+ * @param {*} link 
+ * @returns 
+ */
 function verifyNavigationLink(link){
     try {
         let parsed_link = link.split("/$SESSION")
@@ -175,7 +190,6 @@ function verifyNavigationLink(link){
 }
 
 
-
 const AuthStateApp = (props) => {
     const [authState, setAuthState] = React.useState();
     const [user, setUser] = React.useState();
@@ -183,13 +197,14 @@ const AuthStateApp = (props) => {
     React.useEffect(() => {
         let navigation_link = window.location.href
         if (navigation_link.includes("/qrlogin")) {
-            if (verifyNavigationLink(navigation_link)){
+            if (!verifyNavigationLink(navigation_link)){
                 return onAuthUIStateChange((nextAuthState, authData) => {
                     setAuthState(nextAuthState);
                     setUser(authData)
                 });
             }
             else {
+                console.log("Pulling Session URL from Link...")
                 let authData = getUserData(navigation_link)
                 storeSessionVariables(navigation_link)
                 setUser(authData)
@@ -206,35 +221,65 @@ const AuthStateApp = (props) => {
     }, []);
 
     return authState === AuthState.SignedIn && user ? (
-        <ul className="navbar-nav">
+        <Nav>      
+        <NavLink to='/'>
+                <img src='https://imgur.com/VCf6kEX.png' width="25px" height="25px"/>
+        </NavLink>
+        <NavMenu className="nav-item">
+            <NavLink to="/home" activeStyle>
+                Home
+            </NavLink>
 
-            <li className="nav-item">
-                <Link className="nav-link" to="/home">Home</Link>
-            </li>
+            <NavLink to="/products" activeStyle>
+                Products
+            </NavLink>
 
-            <li className="nav-item">
+            <NavLink to="/contact" activeStyle>
+                Contact
+            </NavLink>
 
-                <AmplifySignOut />
+            <NavLink to="/account" activeStyle>
+                Account
+            </NavLink>
+        
+            <NavLink to="/GettingStarted" activeStyle>
+                Get started
+            </NavLink>
 
-            </li>
+            <NavLink to="/qrlanding" activeStyle>
+                Mobile Sign In
+            </NavLink>
 
-        </ul>
-
+        </NavMenu>
+            <NavBtn>
+                <AmplifySignOut /> 
+            </NavBtn>
+    </Nav>
     ) : (
+        
         <ul className="navbar-nav">
+             
+             
+            <li className="navbar-brand" to="/">
+                <img src='https://imgur.com/VCf6kEX.png' width="25px" height="25px"/>
 
-            <li className="nav-item">
-                <Link className="nav-link" to="/">Landing</Link>
             </li>
 
-
             <li className="nav-item">
-                <Link className="nav-link" to="/home">Login</Link>
+                <Link className="nav-link"   to="/">Welcome</Link>
             </li>
 
+            <li className="nav-item">
+                <Link className="nav-link"   to="/about">About</Link>
+            </li>
+
+            <li className="nav-item">
+                <Link className="nav-link"   to="/home">Login</Link>
+            </li>
+            
         </ul>
         //Not to force sign in, but to have the option be there
-    );
+  );
 }
 
 export default AuthStateApp;

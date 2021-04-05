@@ -1,5 +1,7 @@
 import React from "react";
 import {Amplify, Auth} from 'aws-amplify';
+import BoxImage from './photo/box_image.png'
+
 
 var QRCode = require('qrcode.react');
 
@@ -41,25 +43,22 @@ function getSessionURL(){
 function QRLanding() {
     let sessionURL = getSessionURL()
     return (
-        <div className="App">
-            <header className="App-header">
-                <h1 style={{marginBottom: "10%"}}>QR Landing Page</h1>
-                <QRCode size={500} value={sessionURL} />
-
-            </header>
+        <div style={{marginLeft: "35%", marginTop: "5%"}}>
+          <div style={{position: "absolute", zIndex: "10", marginLeft: "5%", marginTop: "2%"}}>
+            <h1>Login on Mobile Client</h1>
+          </div>
+          <div style={{position: "absolute"}}>
+            <img src={BoxImage} style={{width: "100%"}}></img>
+          </div>
+          <div style={{position: "absolute", zIndex: "1", marginTop: "10%", marginLeft: "4%"}}>
+            <QRCode size={350} value={sessionURL} />
+          </div>
+          <div style={{position: "absolute", zIndex: "10", marginTop: "32%"}}>
+            <h3>Scan this on any <i>Device</i> with a <i>Camera</i> to <i>Automatically Authenticate </i>!</h3>
+          </div>
         </div>
     );
 }
 
-
-
-
-// function QRLanding() {
-//     return (
-//         <div>
-//             <h2>QR Landing Page!</h2>
-//         </div>
-//     )
-// }
 
 export default QRLanding;
