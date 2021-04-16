@@ -3,9 +3,8 @@ import { BrowserRouter as Router, Link } from "react-router-dom";
 import Amplify, { Auth } from 'aws-amplify';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
-import PrivateKey from './PrivateKey'
+import * as constantsClass from './Constants'
 import awsconfig from './aws-exports'
-import ReactDOM from 'react-dom'
 import {
     Nav,
     NavLink,
@@ -20,28 +19,33 @@ var CryptoJS = require('crypto-js')
 Amplify.configure(awsconfig);
 
 
-
 const AuthStateApp = (props) => {
     const [authState, setAuthState] = React.useState();
     const [user, setUser] = React.useState();
 
     React.useEffect(() => {
-        <PrivateKey id={'private_key'}/>
-        let private_key = document.getElementById('private_key').innerHTML
-        console.log(private_key)
+        let private_key = constantsClass.PrivateKey
         let navigation_link = window.location.href
         if (navigation_link.includes("/qrlogin")) {
-            let user = CryptoJS.AES.decrypt(navigation_link.split('/$')[1].split('$=')[1], private_key).toString(CryptoJS.enc.Utf8)
-            let password = CryptoJS.AES.decrypt(navigation_link.split('/$')[2].split('$=')[1], private_key).toString(CryptoJS.enc.Utf8)
+            let encrypted_user = navigation_link.split('/qrlogin/')[1].split('$SESSION$')[0].toString()
+            let encrypted_password = navigation_link.split('/qrlogin/')[1].split('$SESSION$')[1]
+            console.log(constantsClass.PrivateKey)
 
-            async function signIN(){
-                return await Auth.signIn(user, password)
-            }
-            const cognitoUser = signIN()
-            cognitoUser.then(function(result) {
-                setAuthState('signedin')
-                setUser(result)
-            })
+            let user = CryptoJS.AES.decrypt("hello", constantsClass.PrivateKey).toString(CryptoJS.enc.Utf8)
+            console.log(user)
+            // let password = CryptoJS.AES.decrypt(encrypted_password, private_key)
+            // console.log(user)
+            // console.log(password)
+
+            // async function signIN(){
+            //     return await Auth.signIn(user, password)
+            // }
+            // const cognitoUser = signIN()
+            // cognitoUser.then(function(result) {
+            //     console.log(result)
+            //     setAuthState('signedin')
+            //     setUser(result)
+            // })
             
         }
         else {
