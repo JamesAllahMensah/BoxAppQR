@@ -1,7 +1,7 @@
 import React from "react";
 import { Amplify, Auth } from 'aws-amplify';
-import BoxImage from './photo/box_image.png'
 import { render } from "@testing-library/react";
+import PrivateKey from './PrivateKey'
 
 var QRCode = require('qrcode.react');
 var CryptoJS = require('crypto-js')
@@ -18,31 +18,27 @@ class QRLanding extends React.Component {
       password: '',
       password_verified: false,
       error_message: '',
-      private_key: ''
+      private_key: '',
+      keyReceived: true
     }
   }
 
   componentDidMount() {
     this.getCognitoUser()
-    this.getPrivateKey()
+  }
+  
+  componentDidUpdate(){
+    this.storePrivateKey()
   }
 
-  getPrivateKey() {
-    AWS.config.update(
-      {
-        accessKeyId: "AKIAWRYQXG7XLD4GE4XY",
-        secretAccessKey: "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",
-      }
-    );
-    var s3 = new AWS.S3({'apiVersion': '2006-03-01'});
-    s3.getObject(
-      { Bucket: "boxprivatekey", Key: "key"},
-      function (error, data) {
-        this.setState({
-          private_key: data.Body.toString('utf-8').split('-----')[2]
-        })
-      }.bind(this)
-    );
+  storePrivateKey(){
+    if (!this.state.keyReceived){
+      this.setState({
+        private_key: document.getElementById('private_key').innerHTML,
+        keyReceived: true
+      })
+    }
+    
   }
 
   getCognitoUser = (event) => {
@@ -76,8 +72,6 @@ class QRLanding extends React.Component {
 
   verifyPassword() {
     async function attemptSignIn(user, password) {
-      console.log(user)
-      console.log(password)
       return await Auth.signIn(user, password)
     }
     const signIn = attemptSignIn(this.state.cognitoUser['attributes']['email'], this.state.password)
@@ -100,15 +94,14 @@ class QRLanding extends React.Component {
   }
 
 
-
-
   render() {
     return (
       <div>
+        <PrivateKey id={'private_key'}/>
         <div id="verify-password">
           <h3 style={{ marginTop: "3%" }}>Please verify your password to generate QR Code</h3>
           <input value={this.state.password} onChange={this.handleChange.bind(this)} type="password"></input>
-          <button onClick={this.verifyPassword.bind(this)}>Submit</button>
+          <button onClick={this.verifyPassword.bind(this)}>Generate QR Code</button>
           {this.state.error_message.length > 0 ?
             <div>
               <h3 style={{ marginTop: "3%" }}>{this.state.error_message}</h3>
