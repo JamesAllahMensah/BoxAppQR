@@ -1,64 +1,132 @@
 import React from "react";
-import {Amplify, Auth} from 'aws-amplify';
+import { Amplify, Auth } from 'aws-amplify';
 import BoxImage from './photo/box_image.png'
-
+import { render } from "@testing-library/react";
 
 var QRCode = require('qrcode.react');
+var CryptoJS = require('crypto-js')
+var AWS = require('aws-sdk');
 
-function getSessionURL(){
-  let website_url = "https://tyler-warburton.com/qrlogin"
-  let url_information = {}
-  
-
-  for (const [key, value] of Object.entries(localStorage)) {
-    let identifier = key.split(".")[key.split(".").length - 1]
-    url_information[identifier] = value
-
-    if (key.includes("CognitoIdentityServiceProvider") && key.includes("accessToken")){
-      let serviceKey = key.slice(0, key.indexOf("accessToken") - 1)
-      url_information['serviceProvider'] = serviceKey
+class QRLanding extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      cognitoUser: {},
+      qr_link: '',
+      website_url: 'http://localhost:3000/qrlogin/',
+      totpGenerated: false,
+      password: '',
+      password_verified: false,
+      error_message: '',
+      private_key: ''
     }
   }
 
-  let id_payload_info = Auth.user.signInUserSession.idToken.payload
-  let access_payload_info = Auth.user.signInUserSession.accessToken.payload
-
-  let additional_url_info = {
-    'userPoolId': Auth.userPool.userPoolId,
-    'eventId': id_payload_info.event_id,
-    'exp': id_payload_info.exp,
-    'iat': id_payload_info.iat,
-    'iss': id_payload_info.iss,
-    'jti': access_payload_info.jti,
-    'auth_time': id_payload_info.auth_time
+  componentDidMount() {
+    this.getCognitoUser()
+    this.getPrivateKey()
   }
 
-  website_url += "/$SESSION" + url_information["accessToken"] + "/$SESSION" + url_information['idToken']
-  + "/$SESSION" + url_information["LastAuthUser"] + "/$SESSION" + url_information["userData"] + "/$SESSION"
-  + url_information["serviceProvider"] + "/$SESSION" + JSON.stringify(additional_url_info)
-
-  return website_url
-}
-
-function QRLanding() {
-    let sessionURL = getSessionURL()
-    return (
-        <div style={{marginLeft: "35%", marginTop: "5%"}}>
-          <div style={{position: "absolute", zIndex: "10", marginLeft: "5%", marginTop: "2%"}}>
-            <h1>Login on Mobile Client</h1>
-          </div>
-          <div style={{position: "absolute"}}>
-            <img src={BoxImage} style={{width: "100%"}}></img>
-          </div>
-          <div style={{position: "absolute", zIndex: "1", marginTop: "10%", marginLeft: "4%"}}>
-            <QRCode size={350} value={sessionURL} />
-          </div>
-          <div style={{position: "absolute", zIndex: "10", marginTop: "32%"}}>
-            <h3>Scan this on any <i>Device</i> with a <i>Camera</i> to <i>Automatically Authenticate </i>!</h3>
-          </div>
-        </div>
+  getPrivateKey() {
+    AWS.config.update(
+      {
+        accessKeyId: "AKIAWRYQXG7XLD4GE4XY",
+        secretAccessKey: "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",
+      }
     );
+    var s3 = new AWS.S3({'apiVersion': '2006-03-01'});
+    s3.getObject(
+      { Bucket: "boxprivatekey", Key: "key"},
+      function (error, data) {
+        this.setState({
+          private_key: data.Body.toString('utf-8').split('-----')[2]
+        })
+      }.bind(this)
+    );
+  }
+
+  getCognitoUser = (event) => {
+    async function getUser() {
+      return await Auth.currentAuthenticatedUser()
+    }
+    const cognitoUser = getUser()
+    cognitoUser.then(function (result) {
+      this.setState({
+        cognitoUser: result
+      })
+    }.bind(this))
+  }
+
+  handleChange = (event) => {
+    this.setState({
+      password: event.target.value
+    })
+  }
+
+
+  encryptCredentials() {
+    let encrypted_username = CryptoJS.AES.encrypt(this.state.cognitoUser['attributes']['email'], this.state.private_key).toString()
+    let encrypted_password = CryptoJS.AES.encrypt(this.state.password, this.state.private_key).toString()
+    
+    this.setState({
+      qr_link: this.state.website_url + '$USER$=' + encrypted_username + '$PASS$=' + encrypted_password,
+      password: ''
+    })
+  }
+
+  verifyPassword() {
+    async function attemptSignIn(user, password) {
+      console.log(user)
+      console.log(password)
+      return await Auth.signIn(user, password)
+    }
+    const signIn = attemptSignIn(this.state.cognitoUser['attributes']['email'], this.state.password)
+    signIn.then(function (result) {
+      if (result) {
+        this.setState({
+          password_verified: true,
+        }, function(){
+          this.encryptCredentials()
+        })
+      }
+      else {
+        this.setState({
+          error_message: 'Sorry your password was incorrect, please try again',
+          password: ''
+        })
+      }
+    }.bind(this))
+
+  }
+
+
+
+
+  render() {
+    return (
+      <div>
+        <div id="verify-password">
+          <h3 style={{ marginTop: "3%" }}>Please verify your password to generate QR Code</h3>
+          <input value={this.state.password} onChange={this.handleChange.bind(this)} type="password"></input>
+          <button onClick={this.verifyPassword.bind(this)}>Submit</button>
+          {this.state.error_message.length > 0 ?
+            <div>
+              <h3 style={{ marginTop: "3%" }}>{this.state.error_message}</h3>
+            </div> :
+            <div>
+            </div>}
+        </div>
+        <div style={{ marginTop: "5%", display: this.state.qr_link.length > 0 ? 'block' : 'none' }}>
+          <QRCode size={400} value={this.state.qr_link} />
+        </div>
+      </div>
+
+    );
+
+
+  }
 }
+
 
 
 export default QRLanding;

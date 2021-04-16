@@ -5,16 +5,14 @@ import { withAuthenticator } from '@aws-amplify/ui-react';
 
 Amplify.configure(awsconfig);
 
-function Home(){
+function Products(){
     return (
         <div>
-            <h1>Home Page!</h1>
-            <h3>We are Signed In!</h3>
+            <h1>Products Page!</h1>
         </div>
     )
 }
 
-
-export default withAuthenticator(Home);
+export default Products;
 
 // export default Home;
