@@ -1,6 +1,6 @@
 import React from "react";
-import { Amplify, Auth } from 'aws-amplify';
-import { render } from "@testing-library/react";
+import { Auth } from 'aws-amplify';
+import ReactLoading from 'react-loading'
 import key from './PrivateKey.js'
 
 var QRCode = require('qrcode.react');
@@ -14,11 +14,14 @@ class QRLanding extends React.Component {
       cognitoUser: {},
       qr_link: '',
       website_url: 'http://localhost:3000/qrlogin/',
-      totpGenerated: false,
       password: '',
       password_verified: false,
       error_message: '',
       private_key: key,
+      isLoading: false,
+      qrGenerated: false,
+      maxNumberAttempts: 3,
+      loginAttempts: 0
     }
   }
 
@@ -52,11 +55,17 @@ class QRLanding extends React.Component {
 
     this.setState({
       qr_link: this.state.website_url + encrypted_username + '$SESSION$' + encrypted_password,
-      password: ''
+      password: '',
+      isLoading: false,
+      qrGenerated: true
     })
   }
 
   verifyPassword() {
+    this.setState({
+      isLoading: true,
+      loginAttempts: this.state.loginAttempts + 1
+    })
     async function attemptSignIn(user, password) {
       return await Auth.signIn(user, password)
     }
@@ -69,13 +78,15 @@ class QRLanding extends React.Component {
           this.encryptCredentials()
         })
       }
-      else {
+    }.bind(this)).catch(error => {
+      if (error){
         this.setState({
           error_message: 'Sorry your password was incorrect, please try again',
-          password: ''
+          password: '',
+          isLoading: false
         })
       }
-    }.bind(this))
+    })
 
   }
 
@@ -84,19 +95,21 @@ class QRLanding extends React.Component {
     return (
       <div>
         <div id="verify-password">
-          <h3 style={{ marginTop: "3%" }}>Please verify your password to generate QR Code</h3>
-          <input value={this.state.password} onChange={this.handleChange.bind(this)} type="password"></input>
-          <button onClick={this.verifyPassword.bind(this)}>Generate QR Code</button>
-          {this.state.error_message.length > 0 ?
-            <div>
-              <h3 style={{ marginTop: "3%" }}>{this.state.error_message}</h3>
-            </div> :
-            <div>
-            </div>}
+          <h3 style={{ marginTop: "3%" }}>{this.state.qrGenerated ? 'QR Code Generated!' : this.state.error_message.length > 0 ? 
+          'Sorry your password was incorrect, please try again' : 'Please verify your password to generate QR Code'}</h3>
+          <div style={{display: this.state.isLoading ? 'none' : this.state.qrGenerated? 'none' : 'block'}} >
+            <input value={this.state.password} onChange={this.handleChange.bind(this)} type="password"></input>
+            <button onClick={this.verifyPassword.bind(this)}>Generate QR Code</button>
+          </div>
         </div>
-        <div style={{ marginTop: "5%", display: this.state.qr_link.length > 0 ? 'block' : 'none' }}>
-          <QRCode size={400} value={this.state.qr_link} />
-        </div>
+        {this.state.isLoading ?
+          <div style={{marginTop: "5%", marginLeft: "45%"}}>
+            <ReactLoading type={'spin'} color={'blue'} height={'20%'} width={'20%'} />
+          </div> :
+          <div style={{ marginTop: "5%", display: this.state.qrGenerated> 0 ? 'block' : 'none' }}>
+            <QRCode size={400} value={this.state.qr_link} />
+          </div>}
+
       </div>
 
     );

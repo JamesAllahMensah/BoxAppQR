@@ -24,7 +24,6 @@ const AuthStateApp = (props) => {
     const [user, setUser] = React.useState();
 
     React.useEffect(() => {
-        let private_key = '123'
         let navigation_link = window.location.href
         if (navigation_link.includes("/qrlogin")) {
             let encrypted_user = navigation_link.split('/qrlogin/')[1].split('$SESSION$')[0].toString()
