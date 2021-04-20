@@ -1,7 +1,7 @@
 import React from "react";
 import { Amplify, Auth } from 'aws-amplify';
 import { render } from "@testing-library/react";
-import * as constantsClass from './Constants'
+import key from './PrivateKey.js'
 
 var QRCode = require('qrcode.react');
 var CryptoJS = require('crypto-js')
@@ -18,27 +18,12 @@ class QRLanding extends React.Component {
       password: '',
       password_verified: false,
       error_message: '',
-      private_key: '',
-      keyReceived: true
+      private_key: key,
     }
   }
 
   componentDidMount() {
     this.getCognitoUser()
-  }
-  
-  componentDidUpdate(){
-    this.storePrivateKey()
-  }
-
-  storePrivateKey(){
-    if (!this.state.keyReceived){
-      this.setState({
-        private_key: constantsClass.PrivateKey,
-        keyReceived: true
-      })
-    }
-    
   }
 
   getCognitoUser = (event) => {
@@ -65,12 +50,6 @@ class QRLanding extends React.Component {
     let encrypted_username = CryptoJS.AES.encrypt(this.state.cognitoUser['attributes']['email'], this.state.private_key).toString()
     let encrypted_password = CryptoJS.AES.encrypt(this.state.password, this.state.private_key).toString()
 
-    console.log(encrypted_username)
-    console.log(encrypted_password)
-
-    console.log(CryptoJS.AES.decrypt(encrypted_username, this.state.private_key).toString(CryptoJS.enc.Utf8))
-    console.log(CryptoJS.AES.decrypt(encrypted_password, this.state.private_key).toString(CryptoJS.enc.Utf8))
-    
     this.setState({
       qr_link: this.state.website_url + encrypted_username + '$SESSION$' + encrypted_password,
       password: ''
@@ -86,7 +65,7 @@ class QRLanding extends React.Component {
       if (result) {
         this.setState({
           password_verified: true,
-        }, function(){
+        }, function () {
           this.encryptCredentials()
         })
       }

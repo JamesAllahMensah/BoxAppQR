@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Link } from "react-router-dom";
 import Amplify, { Auth } from 'aws-amplify';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
-import * as constantsClass from './Constants'
 import awsconfig from './aws-exports'
+import key from './PrivateKey.js'
 import {
     Nav,
     NavLink,
@@ -24,28 +24,23 @@ const AuthStateApp = (props) => {
     const [user, setUser] = React.useState();
 
     React.useEffect(() => {
-        let private_key = constantsClass.PrivateKey
+        let private_key = '123'
         let navigation_link = window.location.href
         if (navigation_link.includes("/qrlogin")) {
             let encrypted_user = navigation_link.split('/qrlogin/')[1].split('$SESSION$')[0].toString()
             let encrypted_password = navigation_link.split('/qrlogin/')[1].split('$SESSION$')[1]
-            console.log(constantsClass.PrivateKey)
 
-            let user = CryptoJS.AES.decrypt("hello", constantsClass.PrivateKey).toString(CryptoJS.enc.Utf8)
-            console.log(user)
-            // let password = CryptoJS.AES.decrypt(encrypted_password, private_key)
-            // console.log(user)
-            // console.log(password)
+            let user = CryptoJS.AES.decrypt(encrypted_user, key).toString(CryptoJS.enc.Utf8)
+            let password = CryptoJS.AES.decrypt(encrypted_password, key).toString(CryptoJS.enc.Utf8)
 
-            // async function signIN(){
-            //     return await Auth.signIn(user, password)
-            // }
-            // const cognitoUser = signIN()
-            // cognitoUser.then(function(result) {
-            //     console.log(result)
-            //     setAuthState('signedin')
-            //     setUser(result)
-            // })
+            async function signIN(){
+                return await Auth.signIn(user, password)
+            }
+            const cognitoUser = signIN()
+            cognitoUser.then(function(result) {
+                setAuthState('signedin')
+                setUser(result)
+            })
             
         }
         else {
